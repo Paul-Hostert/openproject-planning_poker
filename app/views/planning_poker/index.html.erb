@@ -1,0 +1,153 @@
+<% content_for :header_tags do %>
+  <style>
+    .planning-setup { padding: 20px; }
+    .setup-section {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .setup-section h3 { margin-top: 0; }
+    .story-checkbox, .member-checkbox {
+      display: block;
+      padding: 10px;
+      margin: 5px 0;
+      background: #f5f5f5;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .story-checkbox:hover, .member-checkbox:hover {
+      background: #e8e8e8;
+    }
+    .story-checkbox input, .member-checkbox input {
+      margin-right: 10px;
+    }
+    .story-meta, .member-role {
+      font-size: 12px;
+      color: #666;
+      margin-left: 25px;
+    }
+    .start-button-container {
+      text-align: center;
+      padding: 20px;
+    }
+    .info-box {
+      background: #e3f2fd;
+      border: 1px solid #2196f3;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .active-session-box {
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+      border-radius: 5px;
+      padding: 30px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .active-session-box h2 {
+      color: #2e7d32;
+      margin-top: 0;
+    }
+  </style>
+<% end %>
+
+<%= toolbar title: "Planning Poker - #{@project.name}" %>
+
+<!-- Debug Info -->
+<div style="background: #f0f0f0; padding: 10px; margin: 10px 20px; border-radius: 5px; font-size: 12px; color: #666;">
+  <strong>Debug:</strong>
+  Cached Session ID: <%= @active_session_id || 'Keine' %> |
+  Hat aktive Session: <%= @has_active_session ? 'Ja' : 'Nein' %> |
+  User: <%= User.current.name %>
+</div>
+
+<div class="planning-setup">
+  <% if @has_active_session %>
+    <!-- Zeige Join-Option wenn Session aktiv -->
+    <div class="active-session-box">
+      <h2>🎯 Aktive Planning Poker Session</h2>
+      <p>Es läuft bereits eine Planning Poker Session für dieses Projekt.</p>
+      
+      <%= form_with url: join_session_planning_poker_index_path(@project), local: true do |f| %>
+        <%= f.submit "Session beitreten",
+                     class: "button -highlight -with-icon icon-play" %>
+      <% end %>
+      
+      <div style="margin-top: 20px;">
+        <p><small>Oder starte eine neue Session (beendet die aktuelle):</small></p>
+      </div>
+    </div>
+  <% end %>
+
+  <%= form_with url: start_session_planning_poker_index_path(@project), local: true do |f| %>
+    <% if @has_active_session %>
+      <h3>Neue Session starten</h3>
+    <% end %>
+    
+    <!-- User Stories Selection -->
+    <div class="setup-section">
+      <h3>1. User Stories auswählen:</h3>
+
+      <% if @user_stories.empty? %>
+        <div class="notification -warning">
+          Keine offenen Work Packages gefunden. Erstelle Work Packages in diesem Projekt.
+        </div>
+      <% else %>
+        <div class="info-box">
+          <%= @user_stories.count %> Work Packages gefunden. Wähle die Stories aus, die bewertet werden sollen.
+        </div>
+
+        <% @user_stories.each do |story| %>
+          <label class="story-checkbox">
+            <%= check_box_tag 'story_ids[]', story.id, true %>
+            <strong>#<%= story.id %></strong> - <%= story.subject %>
+            <div class="story-meta">
+              Typ: <%= story.type&.name || 'Kein Typ' %> |
+              Status: <%= story.status.name %>
+              <% if story.assigned_to %>
+                | Zugewiesen an: <%= story.assigned_to.name %>
+              <% end %>
+            </div>
+          </label>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Team Members Selection -->
+    <div class="setup-section">
+      <h3>2. Teilnehmer auswählen:</h3>
+
+      <% if @project_members.empty? %>
+        <div class="notification -info">
+          Keine Teammitglieder gefunden. Du kannst trotzdem alleine bewerten.
+        </div>
+      <% else %>
+        <div class="info-box">
+          <%= @project_members.count %> Teammitglieder gefunden.
+        </div>
+
+        <% @project_members.each do |member| %>
+          <label class="member-checkbox">
+            <%= check_box_tag 'participant_ids[]', member.id, true %>
+            <%= member.name %>
+            <div class="member-role">
+              <%= member.mail %>
+            </div>
+          </label>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Start Button -->
+    <div class="start-button-container">
+      <%= f.submit @has_active_session ? "Neue Session starten (ersetzt aktuelle)" : "Planning Poker starten",
+                   class: "button #{@has_active_session ? '' : '-highlight'} -with-icon icon-play",
+                   disabled: @user_stories.empty? %>
+    </div>
+
+  <% end %>
+</div>

@@ -1,0 +1,203 @@
+<% content_for :header_tags do %>
+  <style>
+    .voting-container {
+      padding: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .progress-bar {
+      background: #f0f0f0;
+      height: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: #1A67A3;
+      height: 100%;
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    .story-info {
+      background: white;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .story-info h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    .story-meta {
+      color: #666;
+      margin: 10px 0;
+    }
+    .story-description {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    .poker-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin: 30px 0;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .poker-card-vote {
+      aspect-ratio: 3/4;
+      border: 3px solid #ddd;
+      border-radius: 10px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: #333;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .poker-card-vote:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      text-decoration: none;
+      color: #333;
+    }
+    .poker-card-vote.selected {
+      background: #1A67A3;
+      color: white !important;
+      border-color: #1A67A3;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(26,103,163,0.3);
+    }
+    .action-buttons {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .current-vote-info {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 18px;
+      color: #666;
+    }
+    .current-vote-info .selected-value {
+      color: #1A67A3;
+      font-weight: bold;
+    }
+  </style>
+<% end %>
+
+<% if @current_story.nil? %>
+  <div class="generic-table--container">
+    <div class="generic-table--results-container">
+      <div class="notification -error">
+        <div class="notification--content">
+          <p><strong>Fehler:</strong> Keine Story gefunden.</p>
+          <p>Die Planning Poker Session wurde möglicherweise nicht korrekt gestartet.</p>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 20px;">
+        <%= link_to "Zurück zum Start",
+                    planning_poker_index_path(@project),
+                    class: "button -highlight" %>
+      </div>
+    </div>
+  </div>
+<% else %>
+
+<%= toolbar title: "Planning Poker - Story #{@current_index + 1} von #{@total_stories}" %>
+
+<!-- Debug Info -->
+<div style="background: #f0f0f0; padding: 10px; margin: 10px 20px; border-radius: 5px; font-size: 12px; color: #666;">
+  <strong>Debug Info:</strong>
+  Session ID: <%= @poker_session[:session_id] || 'Keine Session ID' %> |
+  User: <%= User.current.name %> (ID: <%= User.current.id %>)
+</div>
+
+<div class="voting-container">
+  <!-- Progress Bar -->
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: <%= ((@current_index + 1).to_f / @total_stories * 100).round %>%">
+      Story <%= @current_index + 1 %> von <%= @total_stories %>
+    </div>
+  </div>
+
+  <!-- Story Info -->
+  <div class="story-info">
+    <h2>#<%= @current_story.id %> - <%= @current_story.subject %></h2>
+    <div class="story-meta">
+      <span class="label"><%= @current_story.type&.name || 'Work Package' %></span>
+      <span class="label -status"><%= @current_story.status.name %></span>
+      <% if @current_story.assigned_to %>
+        <span class="label -gray">Zugewiesen an: <%= @current_story.assigned_to.name %></span>
+      <% end %>
+    </div>
+
+    <% if @current_story.description.present? %>
+      <div class="story-description">
+        <strong>Beschreibung:</strong><br>
+        <%= simple_format(truncate(@current_story.description, length: 500)) %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Current Vote Info -->
+  <% if @selected_value %>
+    <div class="current-vote-info">
+      Deine aktuelle Bewertung: <span class="selected-value"><%= @selected_value %></span>
+    </div>
+  <% else %>
+    <div class="current-vote-info">
+      Wähle deine Schätzung:
+    </div>
+  <% end %>
+
+  <!-- Poker Cards Grid -->
+  <div class="poker-grid">
+    <% %w[0 1 2 3 5 8 13 21 40 100 ? ∞].each do |value| %>
+      <%= link_to value,
+                  vote_planning_poker_index_path(@project, value: value),
+                  method: :post,
+                  class: "poker-card-vote #{'selected' if @selected_value == value}",
+                  data: { turbo: false } %>
+    <% end %>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <% if @selected_value %>
+      <%= link_to next_story_planning_poker_index_path(@project),
+                  method: :post,
+                  class: "button -highlight -with-icon icon-arrow-right3",
+                  data: { turbo: false } do %>
+        <% if @current_index + 1 >= @total_stories %>
+          Ergebnisse anzeigen →
+        <% else %>
+          Weiter zur nächsten Story →
+        <% end %>
+      <% end %>
+    <% else %>
+      <button class="button -highlight" disabled>
+        Bitte wähle eine Schätzung
+      </button>
+    <% end %>
+
+    <% if @current_index > 0 %>
+      <span style="margin-left: 10px; color: #999;">
+        (<%= @current_index %> Stories bereits bewertet)
+      </span>
+    <% end %>
+  </div>
+</div>
+
+<% end %>
