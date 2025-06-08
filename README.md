@@ -26,7 +26,7 @@ Ein Plugin, dass OpenProject um die Funktion Planning Poker zur Aufwandschätzun
 # Im Verzeichnis, dass die Datei docker-compose.yml enthält
 mkdir -p plugins
 cd plugins
-git clone https://github.com/yourusername/openproject-planning_poker.git
+git clone https://github.com/Paul-Hostert/openproject-planning_poker.git
 ```
 
 2. **Plugin mounten** im eigenen `docker-compose.yml` oder in einer neu erstellten `docker-compose.override.yml`:
@@ -59,7 +59,7 @@ docker-compose up -d
 1. **Plugin clonen** im eigenen OpenProject Modules Verzeichnis:
 ```bash
 cd /path/to/openproject
-git clone https://github.com/yourusername/openproject-planning_poker.git modules/openproject-planning_poker
+git clone https://github.com/Paul-Hostert/openproject-planning_poker.git modules/openproject-planning_poker
 ```
 
 2. **Abhängigkeiten installieren** (falls nötig):
