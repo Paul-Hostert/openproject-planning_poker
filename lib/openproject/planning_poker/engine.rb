@@ -2,6 +2,7 @@ module OpenProject
   module PlanningPoker
     class Engine < ::Rails::Engine
       engine_name :openproject_planning_poker
+
       include OpenProject::Plugins::ActsAsOpEngine
       
       register 'openproject-planning_poker',
