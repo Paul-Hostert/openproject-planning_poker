@@ -8,7 +8,27 @@
       padding: 20px;
       margin-bottom: 20px;
     }
-    .setup-section h3 { margin-top: 0; }
+    .setup-section h3 { 
+      margin-top: 0; 
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .filter-controls {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      font-weight: normal;
+    }
+    .filter-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .filter-checkbox input[type="checkbox"] {
+      cursor: pointer;
+    }
     .story-checkbox, .member-checkbox {
       display: block;
       padding: 10px;
@@ -24,10 +44,22 @@
     .story-checkbox input, .member-checkbox input {
       margin-right: 10px;
     }
+    .story-checkbox.hidden {
+      display: none !important;
+    }
     .story-meta, .member-role {
       font-size: 12px;
       color: #666;
       margin-left: 25px;
+    }
+    .story-points-badge {
+      display: inline-block;
+      background: #1A67A3;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      margin-left: 10px;
     }
     .start-button-container {
       text-align: center;
@@ -40,57 +72,93 @@
       padding: 15px;
       margin-bottom: 20px;
     }
-    .active-session-box {
-      background: #e8f5e9;
-      border: 2px solid #4caf50;
-      border-radius: 5px;
-      padding: 30px;
-      text-align: center;
-      margin: 20px 0;
-    }
-    .active-session-box h2 {
-      color: #2e7d32;
-      margin-top: 0;
+    .stories-counter {
+      font-size: 12px;
+      color: #666;
+      margin-left: 10px;
     }
   </style>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterCheckbox = document.getElementById('hideRatedStories');
+      const counterElement = document.querySelector('.stories-counter');
+      const infoBox = document.querySelector('.info-box');
+      
+      function filterStories() {
+        const storyCheckboxes = document.querySelectorAll('.story-checkbox');
+        let hiddenCount = 0;
+        let visibleCount = 0;
+        
+        storyCheckboxes.forEach(function(storyDiv) {
+          // Prüfe ob Story Points Badge existiert
+          const storyPointsBadge = storyDiv.querySelector('.story-points-badge');
+          const hasStoryPoints = storyPointsBadge !== null;
+          
+          if (filterCheckbox.checked && hasStoryPoints) {
+            // Bewertete Story ausblenden wenn Checkbox aktiv
+            storyDiv.style.display = 'none';
+            // Checkbox deselektieren
+            const checkbox = storyDiv.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = false;
+            hiddenCount++;
+          } else {
+            // Story anzeigen
+            storyDiv.style.display = 'block';
+            visibleCount++;
+            // Bei unbewerteten Stories Checkbox aktivieren
+            const checkbox = storyDiv.querySelector('input[type="checkbox"]');
+            if (checkbox && !hasStoryPoints) {
+              checkbox.checked = true;
+            }
+          }
+        });
+        
+        // Counter aktualisieren
+        const totalStories = storyCheckboxes.length;
+        
+        if (filterCheckbox.checked && hiddenCount > 0) {
+          counterElement.textContent = `(${visibleCount} unbewertete von ${totalStories} gesamt)`;
+        } else {
+          counterElement.textContent = `(${totalStories} gesamt)`;
+        }
+        
+        // Info Box bleibt unverändert - zeigt immer die Gesamtstatistik
+        const ratedCount = document.querySelectorAll('.story-points-badge').length;
+        if (ratedCount > 0) {
+          infoBox.innerHTML = totalStories + ' Work Packages gefunden. ' + ratedCount + ' davon sind bereits bewertet.';
+        } else {
+          infoBox.innerHTML = totalStories + ' Work Packages gefunden.';
+        }
+      }
+      
+      // Event Listener für Checkbox
+      if (filterCheckbox) {
+        filterCheckbox.addEventListener('change', filterStories);
+        
+        // Initial Filter anwenden (standardmäßig ist Checkbox angehakt)
+        filterStories();
+      }
+    });
+  </script>
 <% end %>
 
 <%= toolbar title: "Planning Poker - #{@project.name}" %>
 
-<!-- Debug Info -->
-<div style="background: #f0f0f0; padding: 10px; margin: 10px 20px; border-radius: 5px; font-size: 12px; color: #666;">
-  <strong>Debug:</strong>
-  Cached Session ID: <%= @active_session_id || 'Keine' %> |
-  Hat aktive Session: <%= @has_active_session ? 'Ja' : 'Nein' %> |
-  User: <%= User.current.name %>
-</div>
-
 <div class="planning-setup">
-  <% if @has_active_session %>
-    <!-- Zeige Join-Option wenn Session aktiv -->
-    <div class="active-session-box">
-      <h2>🎯 Aktive Planning Poker Session</h2>
-      <p>Es läuft bereits eine Planning Poker Session für dieses Projekt.</p>
-      
-      <%= form_with url: join_session_planning_poker_index_path(@project), local: true do |f| %>
-        <%= f.submit "Session beitreten",
-                     class: "button -highlight -with-icon icon-play" %>
-      <% end %>
-      
-      <div style="margin-top: 20px;">
-        <p><small>Oder starte eine neue Session (beendet die aktuelle):</small></p>
-      </div>
-    </div>
-  <% end %>
-
   <%= form_with url: start_session_planning_poker_index_path(@project), local: true do |f| %>
-    <% if @has_active_session %>
-      <h3>Neue Session starten</h3>
-    <% end %>
-    
+
     <!-- User Stories Selection -->
     <div class="setup-section">
-      <h3>1. User Stories auswählen:</h3>
+      <h3>
+        <span>1. User Stories oder Tasks auswählen <span class="stories-counter"></span></span>
+        <div class="filter-controls">
+          <label class="filter-checkbox">
+            <%= check_box_tag 'hideRatedStories', '1', true %>
+            Nur unbewertete Stories anzeigen
+          </label>
+        </div>
+      </h3>
 
       <% if @user_stories.empty? %>
         <div class="notification -warning">
@@ -98,13 +166,21 @@
         </div>
       <% else %>
         <div class="info-box">
-          <%= @user_stories.count %> Work Packages gefunden. Wähle die Stories aus, die bewertet werden sollen.
+          <%= @user_stories.count %> Work Packages gefunden. 
+          <% stories_with_points = @user_stories.select { |s| s.story_points.present? && s.story_points > 0 }.count %>
+          <% if stories_with_points > 0 %>
+            <%= stories_with_points %> davon sind bereits bewertet.
+          <% end %>
         </div>
 
         <% @user_stories.each do |story| %>
-          <label class="story-checkbox">
-            <%= check_box_tag 'story_ids[]', story.id, true %>
+          <% has_story_points = story.respond_to?(:story_points) && story.story_points.present? && story.story_points.to_i > 0 %>
+          <label class="story-checkbox <%= 'has-story-points' if has_story_points %>" data-story-id="<%= story.id %>">
+            <%= check_box_tag 'story_ids[]', story.id, !has_story_points %>
             <strong>#<%= story.id %></strong> - <%= story.subject %>
+            <% if has_story_points %>
+              <span class="story-points-badge"><%= story.story_points %> SP</span>
+            <% end %>
             <div class="story-meta">
               Typ: <%= story.type&.name || 'Kein Typ' %> |
               Status: <%= story.status.name %>
@@ -144,8 +220,8 @@
 
     <!-- Start Button -->
     <div class="start-button-container">
-      <%= f.submit @has_active_session ? "Neue Session starten (ersetzt aktuelle)" : "Planning Poker starten",
-                   class: "button #{@has_active_session ? '' : '-highlight'} -with-icon icon-play",
+      <%= f.submit "Planning Poker starten",
+                   class: "button -highlight -with-icon icon-play",
                    disabled: @user_stories.empty? %>
     </div>
 

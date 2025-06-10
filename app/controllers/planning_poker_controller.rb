@@ -9,7 +9,7 @@ class PlanningPokerController < ApplicationController
 
   def index
     @user_stories = @project.work_packages
-                           .includes(:type, :status)
+                           .includes(:type, :status, :assigned_to)
                            .where(status: Status.where(is_closed: false))
                            .order(:position, :created_at)
 

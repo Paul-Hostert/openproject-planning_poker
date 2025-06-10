@@ -1,3 +1,4 @@
+<!-- app/views/planning_poker/vote.html.erb -->
 <% content_for :header_tags do %>
   <style>
     .voting-container {
@@ -5,22 +6,28 @@
       max-width: 1000px;
       margin: 0 auto;
     }
+    .progress-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
     .progress-bar {
       background: #f0f0f0;
       height: 30px;
       border-radius: 15px;
-      margin-bottom: 30px;
       overflow: hidden;
+      flex: 1;
     }
     .progress-fill {
       background: #1A67A3;
       height: 100%;
       transition: width 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
+    }
+    .progress-text {
       font-weight: bold;
+      color: #333;
+      white-space: nowrap;
     }
     .story-info {
       background: white;
@@ -115,19 +122,15 @@
   </div>
 <% else %>
 
-<%= toolbar title: "Planning Poker - Story #{@current_index + 1} von #{@total_stories}" %>
-
-<!-- Debug Info -->
-<div style="background: #f0f0f0; padding: 10px; margin: 10px 20px; border-radius: 5px; font-size: 12px; color: #666;">
-  <strong>Debug Info:</strong>
-  Session ID: <%= @poker_session[:session_id] || 'Keine Session ID' %> |
-  User: <%= User.current.name %> (ID: <%= User.current.id %>)
-</div>
+<%= toolbar title: "Planning Poker" %>
 
 <div class="voting-container">
-  <!-- Progress Bar -->
-  <div class="progress-bar">
-    <div class="progress-fill" style="width: <%= ((@current_index + 1).to_f / @total_stories * 100).round %>%">
+  <!-- Progress Bar mit Text daneben -->
+  <div class="progress-section">
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: <%= ((@current_index + 1).to_f / @total_stories * 100).round %>%"></div>
+    </div>
+    <div class="progress-text">
       Story <%= @current_index + 1 %> von <%= @total_stories %>
     </div>
   </div>
@@ -193,6 +196,7 @@
     <% end %>
 
     <% if @current_index > 0 %>
+      <%# Zurück-Funktion würde zusätzliche Logik im Controller benötigen %>
       <span style="margin-left: 10px; color: #999;">
         (<%= @current_index %> Stories bereits bewertet)
       </span>
