@@ -1,13 +1,8 @@
 module OpenProject
   module PlanningPoker
-    # Version des Plugins
-    VERSION = '0.0.1'
+    VERSION = '1.0.0'
     
-    # Lade die Engine
     require_relative 'planning_poker/engine'
     
-    # Weitere Module können hier geladen werden
-    # require_relative 'planning_poker/hooks'
-    # require_relative 'planning_poker/patches'
   end
 end

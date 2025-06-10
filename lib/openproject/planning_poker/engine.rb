@@ -9,7 +9,7 @@ module OpenProject
                author_url: 'https://github.com/Paul-Hostert',
                requires_openproject: '>= 13.0.0' do
         
-        # Modul und Permissions hier registrieren
+
         project_module :planning_poker, name: 'Planning Poker' do
           permission :view_planning_poker,
                      { planning_poker: [:index, :vote, :show_results, :show_stories] },

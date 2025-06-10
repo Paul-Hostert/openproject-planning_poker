@@ -5,7 +5,6 @@ class PlanningPokerSession < ApplicationRecord
   
   scope :active, -> { where(active: true) }
   
-  # Serialisiere story_ids als Array
   serialize :story_ids
   
   def self.current_for_project(project)
