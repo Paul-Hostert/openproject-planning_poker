@@ -1,14 +1,16 @@
-Rails.logger.info "[PlanningPoker] Loading plugin..."
+# Zusatz für bessere Namespace-Kompatibilität
+if defined?(::OpenProject) && !defined?(::Openproject)
+  ::Openproject = ::OpenProject
+end
 
 Redmine::Plugin.register :openproject_planning_poker do
   name 'OpenProject Planning Poker'
   author 'Paul Hostert'
-  version '0.0.1'
-  description 'Adds Planning Poker to OpenProject'
+  version '1.0.0'
+  description 'Erweitert OpenProject um Planning Poker'
   
   requires_openproject '>= 13.0.0'
   
-  # Als Projekt-Modul registrieren mit korrekten Permissions
   project_module :planning_poker do
     permission :view_planning_poker, 
                { planning_poker: [:index, :vote, :show_results] },
@@ -20,7 +22,6 @@ Redmine::Plugin.register :openproject_planning_poker do
                require: :member
   end
   
-  # Menü-Eintrag
   menu :project_menu,
        :planning_poker,
        { controller: 'planning_poker', action: 'index' },
@@ -29,3 +30,5 @@ Redmine::Plugin.register :openproject_planning_poker do
        icon: 'icon-star',
        if: ->(project) { project.module_enabled?('planning_poker') }
 end
+
+require File.expand_path('../lib/openproject-planning_poker.rb', __FILE__)
