@@ -21,38 +21,112 @@ Ein Plugin, dass OpenProject um die Funktion Planning Poker zur Aufwandschätzun
 
 ### Docker-Installation
 
-1. **Plugin herunterladen** ins eigene OpenProject-Verzeichnis:
+#### Schritt 1: Vorbereitung
+
+**1.1 Projektverzeichnis erstellen**
 ```bash
-# Im Verzeichnis, dass die Datei docker-compose.yml enthält
-mkdir -p plugins
-cd plugins
-git clone https://github.com/Paul-Hostert/openproject-planning_poker.git
+mkdir ~/openproject-docker
+cd ~/openproject-docker
 ```
 
-2. **Plugin mounten** im eigenen `docker-compose.yml` oder in einer neu erstellten `docker-compose.override.yml`:
+**1.2 Plugin Repository klonen**
+```bash
+git clone https://github.com/Paul-Hostert/openproject-planning_poker.git plugins/openproject-planning_poker
+```
+
+**1.3 Docker-Compose Datei erstellen**
+
+Erstelle eine `docker-compose.yml` mit folgendem Inhalt:
+
 ```yaml
 version: '3.7'
 
 services:
-  web:
+  openproject:
+    image: openproject/openproject:15
+    container_name: openproject
+    ports:
+      - "8080:80"
+    environment:
+      - OPENPROJECT_SECRET_KEY_BASE=your-secret-key-here-minimum-30-characters-long
+      - OPENPROJECT_HOST__NAME=localhost:8080
+      - OPENPROJECT_HTTPS=false
+      - OPENPROJECT_DEFAULT__LANGUAGE=de
+      - OPENPROJECT_DISABLE__BUNDLER__VERSION__CHECK=true
     volumes:
-      - ./plugins/openproject-planning_poker:/app/modules/openproject-planning_poker:ro
-  
-  worker:
-    volumes:
-      - ./plugins/openproject-planning_poker:/app/modules/openproject-planning_poker:ro
+      - opdata:/var/openproject/assets
+      - pgdata:/var/openproject/pgdata
+      - ./plugins/openproject-planning_poker:/app/modules/openproject-planning_poker
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  opdata:
 ```
 
-3. **Datenbank-Migrationen durchführen**:
+**1.4 Secret Key generieren und einsetzen**
 ```bash
-docker-compose run --rm web bundle exec rake db:migrate
+# Secret Key generieren
+openssl rand -hex 32
+
+# Den generierten Key in docker-compose.yml bei OPENPROJECT_SECRET_KEY_BASE einsetzen
 ```
 
-4. **Container neustarten**:
+#### Schritt 2: Container starten und Plugin installieren
+
+**2.1 Container starten**
 ```bash
-docker-compose down
 docker-compose up -d
+
+# Warte bis Container vollständig gestartet ist (ca. 2 Minuten)
+sleep 120
+
+# Prüfe ob Container läuft
+docker-compose ps
 ```
+
+**2.2 Plugin installieren**
+```bash
+# In den Container einloggen
+docker-compose exec openproject bash
+
+# Im Container folgende Befehle ausführen:
+cd /app
+
+# Backup der Gemfile.lock erstellen
+cp Gemfile.lock Gemfile.lock.backup
+
+# Gemfile.plugins erstellen
+cat > Gemfile.plugins << 'EOF'
+group :opf_plugins do
+  gem 'openproject-planning_poker', path: 'modules/openproject-planning_poker'
+end
+EOF
+
+# Bundle konfigurieren und installieren
+bundle config unset deployment
+bundle config set frozen false
+bundle install --without development test
+
+# Puma Worker neu starten
+kill -USR2 $(pgrep -f "puma.*worker")
+
+# Container verlassen
+exit
+```
+
+**2.3 Container neu starten**
+```bash
+docker-compose restart openproject
+sleep 30
+```
+
+**2.4 Plugin-Installation verifizieren**
+```bash
+docker-compose exec -u app openproject bundle exec rails runner "puts Redmine::Plugin.all.map(&:id)"
+```
+
+Die Ausgabe sollte `openproject_planning_poker` enthalten.
 
 ### Manuelle Installation
 
