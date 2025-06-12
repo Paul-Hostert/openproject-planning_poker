@@ -10,7 +10,7 @@ module OpenProject
         
         project_module :planning_poker, name: 'Planning Poker' do
           permission :view_planning_poker,
-                     { planning_poker: [:index, :vote, :show_results, :show_stories] },
+                     { planning_poker: [:index, :vote, :show_results] },
                      permissible_on: :project,
                      public: true,
                      require: :loggedin

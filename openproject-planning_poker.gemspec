@@ -12,7 +12,6 @@ Gem::Specification.new do |spec|
     "config/**/*", 
     "db/**/*",
     "lib/**/*",
-    "frontend/**/*",
     "init.rb",
     "README.md"  
   ].select { |f| File.file?(f) }
