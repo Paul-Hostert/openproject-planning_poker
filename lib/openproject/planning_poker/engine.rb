@@ -8,14 +8,14 @@ module OpenProject
                author_url: 'https://github.com/Paul-Hostert',
                requires_openproject: '>= 13.0.0' do
         
-        project_module :planning_poker, name: 'Planning Poker' do
+        project_module :planning_poker do
           permission :view_planning_poker,
-                     { planning_poker: [:index, :vote, :show_results] },
+                     { planning_poker: [:index, :vote, :show_results, :join_session] },
                      permissible_on: :project,
-                     public: true,
-                     require: :loggedin
+                     require: :member
+                     
           permission :manage_planning_poker,
-                     { planning_poker: [:start_session, :next_story, :join_session, :save_story_points, :restart_session] },
+                     { planning_poker: [:start_session, :next_story, :save_story_points, :restart_session] },
                      permissible_on: :project,
                      require: :member
         end

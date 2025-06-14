@@ -1,3 +1,4 @@
+<!-- app/views/planning_poker/vote.html.erb -->
 <% content_for :header_tags do %>
   <style>
     .voting-container {
@@ -104,6 +105,18 @@
       color: #1A67A3;
       font-weight: bold;
     }
+    .session-info {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #666;
+      font-size: 12px;
+    }
+    .session-info .session-id {
+      font-family: monospace;
+      background: #f8f9fa;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
   </style>
 <% end %>
 
@@ -137,6 +150,12 @@
       Story <%= @current_index + 1 %> von <%= @total_stories %>
     </div>
   </div>
+
+  <% if @poker_session[:session_id] %>
+    <div class="session-info">
+      Session: <span class="session-id"><%= @poker_session[:session_id] %></span>
+    </div>
+  <% end %>
 
   <!-- Story Info -->
   <div class="story-info">

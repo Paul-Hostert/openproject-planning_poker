@@ -51,12 +51,41 @@
       padding: 15px;
       margin-bottom: 20px;
     }
+    .active-session-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .session-id {
+      font-family: monospace;
+      font-size: 14px;
+      background: #f8f9fa;
+      padding: 4px 8px;
+      border-radius: 3px;
+      margin: 0 5px;
+    }
   </style>
 <% end %>
 
 <%= toolbar title: "Planning Poker - #{@project.name}" %>
 
 <div class="planning-setup">
+  <% if @has_active_session %>
+    <div class="active-session-box">
+      <h3>🎯 Aktive Planning Poker Session läuft!</h3>
+      <p>Session ID: <span class="session-id"><%= @active_session_id %></span></p>
+      <p>Du kannst der laufenden Session beitreten oder eine neue starten.</p>
+      
+      <%= form_with url: join_session_planning_poker_index_path(@project), local: true do |f| %>
+        <%= f.submit "Session beitreten", 
+                     class: "button -highlight -with-icon icon-login" %>
+      <% end %>
+    </div>
+  <% end %>
+
   <%= form_with url: start_session_planning_poker_index_path(@project), local: true do |f| %>
 
     <!-- User Stories Selection -->
@@ -122,8 +151,9 @@
 
     <!-- Start Button -->
     <div class="start-button-container">
-      <%= f.submit "Planning Poker starten",
+      <%= f.submit @has_active_session ? "Neue Planning Poker Session starten" : "Planning Poker starten",
                    class: "button -highlight -with-icon icon-play",
+                   data: @has_active_session ? { confirm: "Eine Session läuft bereits. Neue Session starten?" } : {},
                    disabled: @user_stories.empty? %>
     </div>
 
