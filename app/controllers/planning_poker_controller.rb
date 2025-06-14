@@ -14,8 +14,8 @@ class PlanningPokerController < ApplicationController
                            .order(:position, :created_at)
 
     # Zähle Stories mit Story Points für die Info-Box
-    @stories_with_points_count = @user_stories.select { |s| 
-      s.respond_to?(:story_points) && s.story_points.present? && s.story_points.to_i > 0 
+    @stories_with_points_count = @user_stories.select { |s|
+      s.respond_to?(:story_points) && s.story_points.present? && s.story_points.to_i > 0
     }.count
 
     @project_members = User.joins(:members)
@@ -85,11 +85,13 @@ class PlanningPokerController < ApplicationController
   def vote
     init_poker_session
 
+    # Session-ID wiederherstellen falls nicht vorhanden
     if @poker_session[:session_id].nil?
       current_session = PlanningPokerSession.current_for_project(@project)
       @poker_session[:session_id] = current_session&.session_id
     end
 
+    # Story IDs wiederherstellen falls nicht vorhanden
     if @poker_session[:story_ids].nil? || @poker_session[:story_ids].empty?
       if @poker_session[:session_id]
         current_session = PlanningPokerSession.find_by(session_id: @poker_session[:session_id])
@@ -106,31 +108,63 @@ class PlanningPokerController < ApplicationController
       end
     end
 
+    # Handle Vote submission
     if request.post? && params[:value]
-      PlanningPokerVote.create!(
-        project: @project,
-        work_package_id: current_story_id,
-        user: User.current,
-        session_id: @poker_session[:session_id],
-        value: params[:value]
-      )
+      begin
+        # Stelle sicher, dass wir eine gültige Story ID haben
+        story_id = current_story_id
+        if story_id.nil?
+          flash[:error] = "Keine gültige Story gefunden."
+          redirect_to planning_poker_index_path(@project)
+          return
+        end
 
-      redirect_to vote_planning_poker_index_path(@project)
-      return
+        # Finde oder erstelle Vote
+        vote = PlanningPokerVote.find_or_initialize_by(
+          session_id: @poker_session[:session_id],
+          work_package_id: story_id,
+          user: User.current
+        )
+        
+        # Setze die Werte
+        vote.project = @project
+        vote.value = params[:value]
+        
+        # Speichere den Vote
+        if vote.save
+          # Erfolg - redirect zum Entfernen des POST-Parameters
+          redirect_to vote_planning_poker_index_path(@project)
+        else
+          flash[:error] = "Fehler beim Speichern der Bewertung: #{vote.errors.full_messages.join(', ')}"
+          redirect_to vote_planning_poker_index_path(@project)
+        end
+        return
+      rescue => e
+        Rails.logger.error "Planning Poker Vote Error: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+        flash[:error] = "Ein Fehler ist aufgetreten. Bitte versuche es erneut."
+        redirect_to vote_planning_poker_index_path(@project)
+        return
+      end
     end
 
+    # Rest der Action für GET requests
     @current_story = current_story
     @current_index = @poker_session[:current_index] || 0
     @total_stories = (@poker_session[:story_ids] || []).length
 
-    existing_vote = PlanningPokerVote.find_by(
-      session_id: @poker_session[:session_id],
-      work_package_id: current_story_id,
-      user: User.current
-    )
-    @selected_value = existing_vote&.value
+    # Hole existierenden Vote falls vorhanden
+    if @poker_session[:session_id] && current_story_id
+      existing_vote = PlanningPokerVote.find_by(
+        session_id: @poker_session[:session_id],
+        work_package_id: current_story_id,
+        user: User.current
+      )
+      @selected_value = existing_vote&.value
+    end
 
     if @current_story.nil?
+      flash[:warning] = "Keine Story zum Bewerten gefunden."
       redirect_to planning_poker_index_path(@project)
     end
   end
@@ -267,8 +301,6 @@ class PlanningPokerController < ApplicationController
     flash[:notice] = "Planning Poker Session wurde beendet."
     redirect_to planning_poker_index_path(@project)
   end
-
-
 
   private
 
